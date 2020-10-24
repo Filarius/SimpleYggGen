@@ -74,6 +74,49 @@ void gpuPrintInfo(){
 
 }
 
+class GpuSHA512 {
+public:
+    void init(uint64_t size, byte platform_id=1, byte device_id=0){
+        psize = size;
+        cl_int status = CL_SUCCESS;
+        std::vector<cl::Platform> platforms;
+        cl::Platform::get(&platforms);
+        std::vector<cl::Device> devices;
+        platforms[1].getDevices(CL_DEVICE_TYPE_ALL,&devices);
+        cl::Context context(devices[0]);
+        pqueue = cl::CommandQueue(context,devices[0]);
+        pkeyBuffer = cl::Buffer(context,CL_MEM_READ_ONLY,sizeof(uint8_t)*32*psize);
+        pshaBuffer = cl::Buffer(context,CL_MEM_WRITE_ONLY,sizeof(uint8_t)*64*psize);
+        std::string kernel_string = gpuGetStringFromFile("sha512.cl");
+        cl::Program::Sources source;
+        source.push_back({kernel_string.c_str(),kernel_string.length()});
+        cl::Program program(context,source);
+        if(program.build({devices[0]})!=CL_SUCCESS){
+            std::cout<<" Error building: "<<program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(devices[0])<<"\n";
+            exit(1);
+        }
+        pkernelsha = cl::Kernel(program,"kernel_sha512");
+        pkernelsha.setArg(0, pkeyBuffer);
+        pkernelsha.setArg(1, pshaBuffer);
+    }
+
+    void KeyToSHA512(uint8_t * input, uint8_t * output){
+        pqueue.enqueueWriteBuffer(pkeyBuffer, CL_TRUE, 0, sizeof(uint8_t) * 32 * psize, input );
+        pqueue.enqueueNDRangeKernel(pkernelsha, cl::NullRange, cl::NDRange(psize));
+        pqueue.enqueueReadBuffer(pshaBuffer, CL_TRUE, 0, sizeof(uint8_t) * 64 * psize, output);
+    }
+
+
+
+private:
+    uint64_t psize;
+    cl::Buffer pkeyBuffer;
+    cl::Buffer pshaBuffer;
+    cl::Kernel pkernelsha;
+    cl::CommandQueue pqueue;
+
+};
+
 
 void handleError(cl_int status,std::string text) {
     if (status != CL_SUCCESS) {
@@ -107,35 +150,7 @@ void gpuKeyToSHA512(uint8_t * input, uint8_t * output,uint64_t size) {
         std::cout<<" Error building: "<<program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(devices[0])<<"\n";
         exit(1);
     }
-
-
     cl::Kernel kernelsha = cl::Kernel(program,"kernel_sha512");
-
-   // status = queue.enqueueWriteBuffer(shaBuffer,CL_TRUE,0,sizeof(uint8_t)*64,input);
-   // handleError(status,"4");
-
-    //cl::Kernel kernelsha = cl::Kernel(program,"hash_main");
-    /*
-    size_t offset=0;
-    if((size % 1024)!=0){
-        raise(666);
-    }
-    while(size > 1024) {
-        status = queue.enqueueWriteBuffer(keyBuffer, CL_TRUE, 0, sizeof(uint8_t) * 32 * 1024, (input + offset * 32));
-        handleError(status, "3");
-
-        kernelsha.setArg(0, keyBuffer);
-        kernelsha.setArg(1, shaBuffer);
-        status = queue.enqueueNDRangeKernel(kernelsha, cl::NullRange, cl::NDRange(1024));
-        handleError(status, "5");
-
-        status = queue.enqueueReadBuffer(shaBuffer, CL_TRUE, 0, sizeof(uint8_t) * 64 * 1024, (output + offset * 64));
-        handleError(status, "6");
-        size -= 1024;
-        offset++;
-    }
-     */
-
     status = queue.enqueueWriteBuffer(keyBuffer, CL_TRUE, 0, sizeof(uint8_t) * 32 * size, input );
     handleError(status, "3");
     kernelsha.setArg(0, keyBuffer);

@@ -18,9 +18,10 @@ else
 	#CXXFLAGS += -O3
 	CXXFLAGS += -mtune=native
 
-	CXXFLAGS += -Ofast
+	#CXXFLAGS += -Ofast
+	CXXFLAGS += -O1
 	#CXXFLAGS += -pipe
-	CXXFLAGS += -funroll-loops
+	#CXXFLAGS += -funroll-loops
 	LDFLAGS := -s
 	#LDFLAGS += -fprofile-generate
 endif

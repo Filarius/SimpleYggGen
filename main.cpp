@@ -37,13 +37,13 @@
 #include "cppcodec/base32_rfc4648.hpp"
 #include "gpu.h"
 
-#define BLOCKSIZE 1024*32
+#define BLOCKSIZE 1024*32*2
 
 //#define SELF_CHECK // debug
 void bookmark(int id) {
     std::cout << "okay " << id << std::endl;
-
 }
+GpuSHA512 gpusha;
 
 void Intro()
 {
@@ -239,38 +239,38 @@ std::string hashToString(const uint8_t hash[crypto_hash_sha512_BYTES])
 
 void logKeys(uint8_t * raw, const key25519 publicKey, const key25519 privateKey)
 {
-	if(newline) // добавляем пустую строку на экране между счетчиком и новым адресом
-	{
-		std::cout << std::endl;
-		newline = false;
-	}
-	if (conf.mesh) {
-		std::string mesh = getMeshname(raw);
-		std::cout << " Domain:     " << pickupMeshnameForOutput(mesh) << std::endl;
-	}
-	std::cout << " Address:    " << getAddress(raw) << std::endl;
-	std::cout << " PublicKey:  " << keyToString(publicKey) << std::endl;
-	std::cout << " PrivateKey: " << keyToString(privateKey) << std::endl;
-	std::cout << std::endl;
+    if(newline) //
+    {
+        std::cout << std::endl;
+        newline = false;
+    }
+    if (conf.mesh) {
+        std::string mesh = getMeshname(raw);
+        std::cout << " Domain:     " << pickupMeshnameForOutput(mesh) << std::endl;
+    }
+    std::cout << " Address:    " << getAddress(raw) << std::endl;
+    std::cout << " PublicKey:  " << keyToString(publicKey) << std::endl;
+    std::cout << " PrivateKey: " << keyToString(privateKey) << std::endl;
+    std::cout << std::endl;
 
-	if (conf.log) // запись в файл
-	{
-		std::ofstream output(conf.outputfile, std::ios::app);
-		output << std::endl;
-		if (conf.mesh) {
-		std::string mesh = getMeshname(raw);
-		output << "Domain:               " << pickupMeshnameForOutput(mesh) << std::endl;
-		}
-		output << "Address:              " << getAddress(raw) << std::endl;
-		output << "EncryptionPublicKey:  " << keyToString(publicKey) << std::endl;
-		output << "EncryptionPrivateKey: " << keyToString(privateKey) << std::endl;
-		output.close();
-	}
+    if (conf.log)
+    {
+        std::ofstream output(conf.outputfile, std::ios::app);
+        output << std::endl;
+        if (conf.mesh) {
+            std::string mesh = getMeshname(raw);
+            output << "Domain:               " << pickupMeshnameForOutput(mesh) << std::endl;
+        }
+        output << "Address:              " << getAddress(raw) << std::endl;
+        output << "EncryptionPublicKey:  " << keyToString(publicKey) << std::endl;
+        output << "EncryptionPrivateKey: " << keyToString(privateKey) << std::endl;
+        output.close();
+    }
 }
+
 
 void process_fortune_key(const keys_block& block, int index)
 {
-
 	if (index == -1)
 		return;
 
@@ -298,8 +298,10 @@ void miner_thread()
 	uint8_t random_bytes[KEYSIZE];
 	uint8_t sha512_hash[crypto_hash_sha512_BYTES];
 
-    uint8_t sha_block[BLOCKSIZE*64];
-    uint8_t key_block[BLOCKSIZE*32];
+	gpusha.init(BLOCKSIZE);
+
+    uint8_t * sha_block = new uint8_t [BLOCKSIZE*64];
+    uint8_t * key_block = new uint8_t [BLOCKSIZE*32];
 
 	if (T == 4 || T == 5) // meshname pattern
 	{
@@ -339,12 +341,17 @@ void miner_thread()
             block.get_public_key(public_key, j);
             memcpy((void *)(key_block + j * 32), public_key, 32);
         }
-        gpuKeyToSHA512(key_block,sha_block,BLOCKSIZE);
+        //gpuKeyToSHA512(key_block,sha_block,BLOCKSIZE);
+        gpusha.KeyToSHA512(key_block,sha_block);
 
 		for (int i = 0; i < BLOCKSIZE; i++)
 		{
-			block.get_public_key(public_key, i);
-			crypto_hash_sha512(sha512_hash, public_key);
+            //fortune_key_index = i;
+
+			//block.get_public_key(public_key, i);
+			//crypto_hash_sha512(sha512_hash, public_key);
+            memcpy((void *)(sha512_hash), (void *)(sha_block + i*64), 64);
+
 			int newones = getOnes(sha512_hash);
 			
 			if (T == 0) // IPv6 pattern mining
