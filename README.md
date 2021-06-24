@@ -1,6 +1,6 @@
 
 ## Fork of [Yggdrasil](https://yggdrasil-network.github.io/) address miner ##
-## Original by Aceton [SimpleYggGen-CPP](https://notabug.org/acetone/SimpleYggGen-CPP) ##
+## Original by Acetone [SimpleYggGen-CPP](https://notabug.org/acetone/SimpleYggGen-CPP) ##
 
 cli only fork, for Yggdrasil 0.4 RC
 
@@ -12,7 +12,7 @@ cli only fork, for Yggdrasil 0.4 RC
 
 
 #### Credits
-R4SAS
+R4SAS  
 eugene martein
 
 

@@ -371,24 +371,27 @@ void miner_thread()
     unsigned char pks[32]; 
     KeysBox keys;
     
+    const int buf_size=100; 
+    byte buff[32 * buf_size];
+    int i = buf_size;
+    
     for (;;) // основной цикл майнинга
     {
-                auto start_time = std::chrono::steady_clock::now();
-        //KeysBox keys = getKeyPair();
-        //Key invKey = bitwiseInverse(keys.PublicKey);
+        auto start_time = std::chrono::steady_clock::now();
         
+        if (i==buf_size){
+            ed25519_randombytes_unsafe(buff, 32*buf_size);   // одиночный запуск рандома - слишком дорогой
+            i = 0;
+        }
+        memcpy(keys.PrivateKey.data(), (const void*)(buff + i*32), 32);
+        i++;
 
-        //randombytes(sk.data(), KEYSIZE);
-        ed25519_randombytes_unsafe(sks, 32);
-        Key pk;
-        //ed25519_publickey(sk.data(), pk.data());
-        ed25519_publickey(sks,pks);
-       int a =1;
+        //ed25519_randombytes_unsafe(keys.PrivateKey.data(), 32);
         
+        ed25519_publickey(keys.PrivateKey.data(), keys.PublicKey.data());
         
-        
-        memcpy(keys.PublicKey.data(), pks, 32);
-        memcpy(keys.PrivateKey.data(), sks, 32);
+       // memcpy(keys.PublicKey.data(), pks, 32);
+        //memcpy(keys.PrivateKey.data(), sks, 32);
         
         Key invKey = bitwiseInverse(keys.PublicKey);
         
