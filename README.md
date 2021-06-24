@@ -1,34 +1,21 @@
-# Simple Yggdrasil address miner in C++
 
-### How build on Windows under MSYS2 shell
+## Fork of [Yggdrasil](https://yggdrasil-network.github.io/) address miner ##
+## Original by Aceton [SimpleYggGen-CPP](https://notabug.org/acetone/SimpleYggGen-CPP) ##
 
-* Run MSYS2 MinGW 64-bit shell
-* Install required packages
+cli only fork, for Yggdrasil 0.4 RC
 
-```bash
-pacman -S make mingw-w64-x86_64-gcc mingw-w64-x86_64-libsodium
-```
+#### diff
 
-* Compile application
+- migration from libsodium to  [floodyberry/ed25519-donna](https://github.com/floodyberry/ed25519-donna) (faster ed25519)
 
-```bash
-make
-```
+- easy build script for MSYS (Windows)
 
-* Run it using `sygcpp.exe`
 
-### How build on Linux
+#### Credits
+R4SAS
+eugene martein
 
-* Install required packages
 
-```
-sudo apt-get install make g++ libsodium-dev
-```
+## How to build##
+Run msys_build.sh
 
-* Compile application
-
-```
-make
-```
-
-* Run it using `./sygcpp`
